@@ -39,6 +39,7 @@
         }
     },
     "scripts": {
+        "build": "cpx \"src/Resources/assets/js/mail-customizer.js\" dist",
         "test": "vendor/bin/phpunit",
         "test-coverage": "vendor/bin/phpunit --coverage-html coverage"
     },
