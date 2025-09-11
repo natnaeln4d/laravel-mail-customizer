@@ -6,23 +6,29 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('mail_templates', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('subject');
-            $table->text('content');
+            $table->string('name')->nullable();
+            $table->string('subject')->nullable();
+            $table->longText('content')->nullable();
             $table->json('styles')->nullable();
-            $table->json('images')->nullable(); 
+            $table->json('images')->nullable();
             $table->string('layout')->default('default');
             $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('mail_templates');
     }
-}
+};
