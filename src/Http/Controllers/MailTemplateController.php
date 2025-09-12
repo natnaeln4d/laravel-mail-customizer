@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Natnaeln4d\MailCustomizer\Models\MailTemplate;
 use Natnaeln4d\MailCustomizer\Services\TemplateCompiler;
+use Natnaeln4d\MailCustomizer\Services\DragDropBuilder;
 use Natnaeln4d\MailCustomizer\Mail\CustomMailable;
 use Natnaeln4d\MailCustomizer\Http\Resources\MailTemplateResource;
 use Illuminate\Support\Facades\Mail;
@@ -14,10 +15,12 @@ use Illuminate\Support\Facades\Storage;
 class MailTemplateController extends Controller
 {
     protected $compiler;
+    protected $builder;
     
-    public function __construct(TemplateCompiler $compiler)
+    public function __construct(TemplateCompiler $compiler, DragDropBuilder $builder)
     {
         $this->compiler = $compiler;
+        $this->builder = $builder;
     }
     
     public function index()
@@ -32,14 +35,21 @@ class MailTemplateController extends Controller
             'name' => 'required|string|max:255',
             'subject' => 'required|string|max:255',
             'content' => 'required|string',
+            'structure' => 'nullable|array', 
             'styles' => 'nullable|array',
             'images' => 'nullable|array', 
         ]);
         
+        $content = $request->content;
+        if (!empty($request->structure)) {
+            $content = $this->builder->generateHtmlFromStructure($request->structure, []);
+        }
+        
         $template = MailTemplate::create([
             'name' => $request->name,
             'subject' => $request->subject,
-            'content' => $request->content,
+            'content' => $content,
+            'structure' => $request->structure, 
             'styles' => $request->styles,
             'images' => $request->images, 
             'layout' => $request->layout ?? 'default',
@@ -60,15 +70,22 @@ class MailTemplateController extends Controller
             'name' => 'required|string|max:255',
             'subject' => 'required|string|max:255',
             'content' => 'required|string',
+            'structure' => 'nullable|array',
             'styles' => 'nullable|array',
             'images' => 'nullable|array', 
         ]);
+        
+        $content = $request->content;
+        if (!empty($request->structure)) {
+            $content = $this->builder->generateHtmlFromStructure($request->structure, []);
+        }
         
         $template = MailTemplate::findOrFail($id);
         $template->update([
             'name' => $request->name,
             'subject' => $request->subject,
-            'content' => $request->content,
+            'content' => $content,
+            'structure' => $request->structure, 
             'styles' => $request->styles,
             'images' => $request->images, 
             'layout' => $request->layout ?? 'default',
@@ -76,6 +93,14 @@ class MailTemplateController extends Controller
         
         return new MailTemplateResource($template);
     }
+    
+    public function getBuilderElements()
+    {
+        return response()->json([
+            'elements' => $this->builder->getElements()
+        ]);
+    }
+    
     
     public function destroy($id)
     {

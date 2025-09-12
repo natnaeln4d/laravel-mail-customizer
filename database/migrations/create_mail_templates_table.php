@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name')->nullable();
             $table->string('subject')->nullable();
             $table->longText('content')->nullable();
+            $table->json('structure')->nullable();
             $table->json('styles')->nullable();
             $table->json('images')->nullable();
             $table->string('layout')->default('default');

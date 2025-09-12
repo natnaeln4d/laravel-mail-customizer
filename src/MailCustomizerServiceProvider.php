@@ -1,5 +1,4 @@
 <?php
-// src/MailCustomizerServiceProvider.php
 
 namespace Natnaeln4d\MailCustomizer;
 
@@ -13,13 +12,12 @@ class MailCustomizerServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/Resources/views', 'mail-customizer');
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         
-        
         $this->publishes([
             __DIR__.'/../config/mail-customizer.php' => config_path('mail-customizer.php'),
         ], 'config');
         
         $this->publishes([
-            __DIR__.'/../dist/mail-customizer.js' => public_path('vendor/mail-customizer/js/mail-customizer.js'),
+            __DIR__.'/../dist/mail-builder.js' => public_path('vendor/mail-customizer/js/mail-builder.js'),
         ], 'assets');
         
         $this->publishes([
@@ -31,6 +29,10 @@ class MailCustomizerServiceProvider extends ServiceProvider
     {
         $this->app->singleton('mail-customizer', function ($app) {
             return new Services\TemplateCompiler();
+        });
+        
+        $this->app->singleton('mail-builder', function ($app) {
+            return new Services\DragDropBuilder();
         });
         
         $this->mergeConfigFrom(
