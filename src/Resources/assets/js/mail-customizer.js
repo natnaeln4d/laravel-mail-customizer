@@ -1,7 +1,22 @@
-
 import Vue from 'vue';
-import MailCustomizerVue from './components/MailCustomizer.vue';
-import MailCustomizerReact from './components/MailCustomizerReact.jsx';
+import draggable from 'vuedraggable';
+import BuilderToolbar from './components/Builder/Toolbar.vue';
+import BuilderCanvas from './components/Builder/Canvas.vue';
+import PropertiesPanel from './components/Builder/PropertiesPanel.vue';
+import BuilderElement from './components/Builder/Element.vue';
+import MailBuilder from './components/MailBuilder.vue';
+
+Vue.component('builder-toolbar', BuilderToolbar);
+Vue.component('builder-canvas', BuilderCanvas);
+Vue.component('properties-panel', PropertiesPanel);
+Vue.component('builder-element', BuilderElement);
+Vue.component('mail-builder', MailBuilder);
+Vue.component('draggable', draggable);
+
+export { BuilderToolbar, BuilderCanvas, PropertiesPanel, BuilderElement, MailBuilder, draggable };
+
+
+
 
 
 Vue.component('mail-customizer', MailCustomizerVue);
@@ -12,6 +27,35 @@ export { MailCustomizerVue, MailCustomizerReact };
 
 document.addEventListener('DOMContentLoaded', function() {
     const vueApps = document.querySelectorAll('[data-mail-customizer-vue]');
+
+    const builderElements = document.querySelectorAll('[data-mail-builder]');
+    
+    builderElements.forEach(element => {
+        const templateId = element.getAttribute('data-template-id');
+        const variablesJson = element.getAttribute('data-variables');
+        
+        let variables = {
+            name: 'Guest User',
+            email: 'user@example.com'
+        };
+        
+        try {
+            if (variablesJson) {
+                variables = JSON.parse(variablesJson);
+            }
+        } catch (e) {
+            console.error('Failed to parse variables JSON:', e);
+        }
+        
+        new Vue({
+            el: element,
+            data: {
+                templateId: templateId ? parseInt(templateId) : null,
+                defaultVariables: variables
+            },
+            template: '<mail-builder :template-id="templateId" :default-variables="defaultVariables"></mail-builder>'
+        });
+    });
     
     vueApps.forEach(appElement => {
         const templateId = appElement.getAttribute('data-template-id');
@@ -73,9 +117,12 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 window.MailCustomizer = {
-    initVue: function(elementId, options = {}) {
+       initVue: function(elementId, options = {}) {
         const element = document.getElementById(elementId);
-        if (!element) return null;
+        if (!element) {
+            console.error('Element not found:', elementId);
+            return null;
+        }
         
         return new Vue({
             el: '#' + elementId,
@@ -85,7 +132,8 @@ window.MailCustomizer = {
                     name: 'Guest User',
                     email: 'user@example.com'
                 }
-            }
+            },
+            template: '<mail-builder :template-id="templateId" :default-variables="defaultVariables"></mail-builder>'
         });
     },
     
