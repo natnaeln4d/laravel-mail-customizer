@@ -389,20 +389,24 @@ export default {
       try {
         const templateData = this.getTemplateData();
         
-        // For testing, we'll just show a success message
-        alert(`Test email would be sent to: ${email}\n\nTemplate content:\n${templateData.content.substring(0, 200)}...`);
-        
-        // In a real implementation, you would call the API:
-        /*
-        const response = await axios.post(`/api/mail-customizer/templates/${this.templateId}/send-test`, {
+        const url = this.templateId
+          ? `/api/mail-customizer/templates/${this.templateId}/send-test`
+          : '/api/mail-customizer/templates/send-test';
+
+        // Without a saved template we send the current draft from the canvas.
+        await axios.post(url, {
           email: email,
-          ...this.defaultVariables
+          subject: 'Test email',
+          content: templateData.content,
+          structure: templateData.structure,
+          variables: this.defaultVariables || {}
         });
-        */
-        
+
+        alert(`Test email sent to ${email}`);
+
       } catch (error) {
         console.error('Error sending test email:', error);
-        alert('Error sending test email');
+        alert('Error sending test email: ' + (error.response?.data?.message || error.message));
       } finally {
         this.loading = false;
       }

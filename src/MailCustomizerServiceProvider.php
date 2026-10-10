@@ -2,13 +2,19 @@
 
 namespace Natnaeln4d\MailCustomizer;
 
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class MailCustomizerServiceProvider extends ServiceProvider
 {
     public function boot()
     {
-        $this->loadRoutesFrom(__DIR__.'/Routes/api.php');
+        Route::group([
+            'prefix' => config('mail-customizer.route_prefix', 'api/mail-customizer'),
+            'middleware' => config('mail-customizer.middleware', ['web', 'auth']),
+        ], function () {
+            $this->loadRoutesFrom(__DIR__.'/routes/api.php');
+        });
         $this->loadViewsFrom(__DIR__.'/Resources/views', 'mail-customizer');
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         
@@ -17,7 +23,7 @@ class MailCustomizerServiceProvider extends ServiceProvider
         ], 'config');
         
         $this->publishes([
-            __DIR__.'/../dist/mail-builder.js' => public_path('vendor/mail-customizer/js/mail-builder.js'),
+            __DIR__.'/../dist/mail-customizer.js' => public_path('vendor/mail-customizer/js/mail-customizer.js'),
         ], 'assets');
         
         $this->publishes([

@@ -7,6 +7,9 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class MailTemplateResource extends JsonResource
 {
+    // The bundled JS clients read the template straight off response.data.
+    public static $wrap = null;
+
     public function toArray($request)
     {
         return [
@@ -14,6 +17,7 @@ class MailTemplateResource extends JsonResource
             'name' => $this->name,
             'subject' => $this->subject,
             'content' => $this->content,
+            'structure' => $this->structure,
             'images' => $this->images,
             'styles' => $this->styles,
             'layout' => $this->layout,

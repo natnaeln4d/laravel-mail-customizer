@@ -10,7 +10,7 @@
 Thumbs.db         
 
 
-/dist/
+# dist/ is committed on purpose: it is the prebuilt JS that `vendor:publish` ships to users.
 /public/vendor/   
 
 

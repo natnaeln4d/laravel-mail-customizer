@@ -113,27 +113,102 @@ class MailTemplateController extends Controller
     public function preview(Request $request, $id)
     {
         $template = MailTemplate::findOrFail($id);
-        $data = $request->all();
-        
-        $compiled = $this->compiler->compile($template, $data);
+        $compiled = $this->compiler->compile($template, $this->variablesFromRequest($request));
         
         return response()->json(['preview' => $compiled]);
     }
     
+    public function previewDraft(Request $request)
+    {
+        $request->validate([
+            'content' => 'nullable|string',
+            'structure' => 'nullable|array',
+            'styles' => 'nullable|array',
+            'images' => 'nullable|array',
+            'variables' => 'nullable|array',
+        ]);
+
+        $compiled = $this->compiler->compile(
+            $this->draftFromRequest($request),
+            $this->variablesFromRequest($request)
+        );
+
+        return response()->json(['preview' => $compiled]);
+    }
+
     public function sendTestEmail(Request $request, $id)
     {
         $template = MailTemplate::findOrFail($id);
-        $email = $request->email ?? auth()->user()->email;
-        
-        Mail::to($email)->send(new CustomMailable($template, $request->all()));
-        
+
+        return $this->deliverTest($request, $template);
+    }
+
+    public function sendTestDraft(Request $request)
+    {
+        $request->validate([
+            'subject' => 'nullable|string|max:255',
+            'content' => 'nullable|string',
+            'structure' => 'nullable|array',
+            'styles' => 'nullable|array',
+            'images' => 'nullable|array',
+            'variables' => 'nullable|array',
+        ]);
+
+        return $this->deliverTest($request, $this->draftFromRequest($request));
+    }
+
+    protected function deliverTest(Request $request, MailTemplate $template)
+    {
+        $request->validate(['email' => 'nullable|email']);
+
+        $email = $request->input('email') ?? optional($request->user())->email
+            ?? config('mail-customizer.testing.default_test_email');
+
+        if (! $email) {
+            return response()->json(['message' => 'No recipient email provided.'], 422);
+        }
+
+        Mail::to($email)->send(new CustomMailable($template, $this->variablesFromRequest($request)));
+
         return response()->json(['message' => 'Test email sent to ' . $email]);
+    }
+
+    /**
+     * Build an unsaved template from the builder's current (draft) state.
+     */
+    protected function draftFromRequest(Request $request): MailTemplate
+    {
+        $content = $request->input('content', '');
+        if (! empty($request->structure)) {
+            $content = $this->builder->generateHtmlFromStructure($request->structure, []);
+        }
+
+        return new MailTemplate([
+            'name' => 'Draft',
+            'subject' => $request->input('subject', 'Test email'),
+            'content' => $content,
+            'structure' => $request->input('structure'),
+            'styles' => $request->input('styles'),
+            'images' => $request->input('images'),
+            'layout' => $request->input('layout', 'default'),
+        ]);
+    }
+
+    protected function variablesFromRequest(Request $request): array
+    {
+        // Clients send either {variables: {...}} or the variables as flat fields.
+        $variables = $request->has('variables')
+            ? (array) $request->input('variables')
+            : $request->except(['email', 'emails', 'subject', 'content', 'structure', 'styles', 'images', 'layout']);
+
+        return array_merge(config('mail-customizer.default_variables', []), $variables);
     }
     
     public function sendCustomEmail(Request $request, $id)
     {
         $template = MailTemplate::findOrFail($id);
-        $data = $request->except('emails');
+        $request->validate(['emails' => 'required|string']);
+        $data = array_merge(config('mail-customizer.default_variables', []), $request->except('emails'));
         $emails = explode(',', $request->emails);
         
         foreach ($emails as $email) {
@@ -150,12 +225,13 @@ class MailTemplateController extends Controller
         ]);
         
         try {
+            $disk = config('mail-customizer.images.default_storage', 'public');
             $path = $request->file('image')->store(
                 config('mail-customizer.images.storage_path', 'mail-templates/images'),
-                config('mail-customizer.images.default_storage', 'public')
+                $disk
             );
             
-            $url = Storage::url($path);
+            $url = Storage::disk($disk)->url($path);
             
             return response()->json([
                 'success' => true,
@@ -177,7 +253,19 @@ class MailTemplateController extends Controller
         ]);
         
         try {
-            Storage::delete($request->path);
+            $disk = config('mail-customizer.images.default_storage', 'public');
+            $root = trim(config('mail-customizer.images.storage_path', 'mail-templates/images'), '/');
+            $path = $request->path;
+
+            // Only allow deleting files inside the package's own upload folder.
+            if (str_contains($path, '..') || ! str_starts_with(ltrim($path, '/'), $root . '/')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid image path'
+                ], 422);
+            }
+
+            Storage::disk($disk)->delete(ltrim($path, '/'));
             
             return response()->json([
                 'success' => true,

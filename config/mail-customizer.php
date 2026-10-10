@@ -8,10 +8,12 @@ return [
     |--------------------------------------------------------------------------
     |
     | These middleware will be applied to all routes of the package.
-    | By default, we use the web and auth middleware.
+    | By default, we use the web and auth middleware (session + CSRF), which
+    | is what the bundled browser UI expects. Use e.g. 'auth:sanctum' if you
+    | drive the API from a token-based SPA.
     |
     */
-    'middleware' => ['api', 'auth:sanctum'],
+    'middleware' => ['web', 'auth'],
 
     /*
     |--------------------------------------------------------------------------
