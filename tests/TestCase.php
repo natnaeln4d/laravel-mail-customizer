@@ -18,6 +18,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('database.default', 'testing');
         // Auth is covered by its own test; keep the others focused on behaviour.
         $app['config']->set('mail-customizer.middleware', ['web']);
+        $app['config']->set('mail-customizer.ui.middleware', ['web']);
     }
 
     protected function defineDatabaseMigrations()

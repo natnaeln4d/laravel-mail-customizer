@@ -27,6 +27,37 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Built-in Builder Page
+    |--------------------------------------------------------------------------
+    |
+    | A ready-made page at /{path} (and /{path}/{templateId}) that hosts the
+    | builder. Disable it if you embed <x-mail-customizer::builder /> yourself.
+    |
+    */
+    'ui' => [
+        'enabled' => true,
+        'path' => 'mail-customizer',
+        'middleware' => ['web', 'auth'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Email Renderer
+    |--------------------------------------------------------------------------
+    |
+    | Controls the table-based HTML generated from the builder's blocks.
+    | 600px is the safe, widely-supported email width.
+    |
+    */
+    'renderer' => [
+        'width' => 600,
+        'background' => '#f4f4f4',
+        'content_background' => '#ffffff',
+        'font_family' => 'Arial, Helvetica, sans-serif',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Default Variables
     |--------------------------------------------------------------------------
     |

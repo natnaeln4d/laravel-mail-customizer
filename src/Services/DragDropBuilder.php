@@ -4,6 +4,7 @@
 namespace Natnaeln4d\MailCustomizer\Services;
 
 use Natnaeln4d\MailCustomizer\Models\MailTemplate;
+use Natnaeln4d\MailCustomizer\Rendering\EmailRenderer;
 use Illuminate\Support\Facades\Storage;
 
 class DragDropBuilder
@@ -38,6 +39,7 @@ class DragDropBuilder
             'icon' => 'fa-square',
             'defaultContent' => '<a href="#" style="display: inline-block; padding: 10px 20px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px;">Button</a>',
             'editable' => true,
+            'properties' => ['text' => 'Button', 'href' => '#'],
             'styles' => [
                 'background-color' => '#007bff',
                 'color' => '#ffffff',
@@ -58,7 +60,7 @@ class DragDropBuilder
             'icon' => 'fa-arrows-alt-v',
             'defaultContent' => '<div style="height: 20px;"></div>',
             'editable' => true,
-            'properties' => ['height']
+            'properties' => ['height' => '20']
         ]
     ];
 
@@ -67,62 +69,21 @@ class DragDropBuilder
         return $this->elements;
     }
 
-    public function generateHtmlFromStructure($structure, $data = [])
+    public function __construct(protected EmailRenderer $renderer)
     {
-        $html = '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>';
-        
-        foreach ($structure as $element) {
-            $html .= $this->renderElement($element, $data);
-        }
-        
-        $html .= '</body></html>';
-        return $html;
     }
 
-    protected function renderElement($element, $data)
+    /**
+     * Render the builder's block tree to email-safe HTML (tables + inline styles).
+     */
+    public function generateHtmlFromStructure($structure, $data = [], array $options = [])
     {
-        $content = $element['content'] ?? $this->elements[$element['type']]['defaultContent'];
-        
-        $styles = array_merge(
-            $this->elements[$element['type']]['styles'] ?? [],
-            $element['styles'] ?? []
-        );
-        
-        $styleString = '';
-        foreach ($styles as $property => $value) {
-            $styleString .= "$property: $value; ";
-        }
-        
-        foreach ($data as $key => $value) {
-            $content = str_replace("{{ $key }}", $value, $content);
-            $content = str_replace("{{$key}}", $value, $content);
-        }
-        
-        if ($element['type'] === 'image' && isset($element['properties']['src'])) {
-            $content = str_replace('{{image_placeholder}}', $element['properties']['src'], $content);
-            
-            if (isset($element['properties']['alignment'])) {
-                $alignmentStyle = '';
-                switch ($element['properties']['alignment']) {
-                    case 'left':
-                        $alignmentStyle = 'float: left; margin-right: 15px;';
-                        break;
-                    case 'right':
-                        $alignmentStyle = 'float: right; margin-left: 15px;';
-                        break;
-                    case 'center':
-                        $alignmentStyle = 'display: block; margin: 0 auto;';
-                        break;
-                }
-                $content = str_replace('style="', 'style="' . $alignmentStyle . ' ', $content);
-            }
-        }
-        
-        if ($element['type'] === 'spacer' && isset($element['properties']['height'])) {
-            $content = str_replace('height: 20px', 'height: ' . $element['properties']['height'] . 'px', $content);
-        }
-        
-        return '<div style="' . $styleString . '">' . $content . '</div>';
+        return $this->renderer->render((array) $structure, $options);
+    }
+
+    public function toPlainText($structure): string
+    {
+        return $this->renderer->toPlainText((array) $structure);
     }
 
     public function parseHtmlToStructure($html)

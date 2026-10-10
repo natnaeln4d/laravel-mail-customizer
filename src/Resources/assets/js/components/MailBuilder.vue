@@ -203,7 +203,9 @@ export default {
           id: uuidv4(),
           type: elementType,
           content: elementConfig.defaultContent,
-          properties: { ...(elementConfig.properties || {}) },
+          properties: Array.isArray(elementConfig.properties)
+            ? elementConfig.properties.reduce((acc, key) => ({ ...acc, [key]: '' }), {})
+            : { ...(elementConfig.properties || {}) },
           styles: { ...(elementConfig.styles || {}) },
           editable: elementConfig.editable
         };
@@ -332,7 +334,21 @@ export default {
       this.loading = true;
       try {
         const templateData = this.getTemplateData();
-        
+
+        // Prefer the server renderer so the preview is exactly what recipients get.
+        try {
+          const res = await axios.post('/api/mail-customizer/templates/preview', {
+            structure: templateData.structure,
+            content: templateData.content,
+            variables: this.defaultVariables || {}
+          });
+          this.previewContent = res.data.preview;
+          this.showPreview = true;
+          return;
+        } catch (e) {
+          console.warn('Server preview unavailable, using local preview:', e);
+        }
+
         // Generate preview HTML
         const previewHtml = `
           <!DOCTYPE html>
