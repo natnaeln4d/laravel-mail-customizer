@@ -1,8 +1,11 @@
-/*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */
-
-/**!
- * Sortable 1.10.2
- * @author	RubaXa   <trash@rubaxa.org>
- * @author	owenm    <owen23355@gmail.com>
- * @license MIT
+/*!
+ * Backbone.Undo.js v0.2
+ * 
+ * Copyright (c)2013 Oliver Sartun
+ * Released under the MIT License
+ *
+ * Documentation and full license available at
+ * https://github.com/osartun/Backbone.Undo.js
  */
+
+/*! regenerator-runtime -- Copyright (c) 2014-present, Facebook, Inc. -- license (MIT): https://github.com/babel/babel/blob/main/packages/babel-helpers/LICENSE */

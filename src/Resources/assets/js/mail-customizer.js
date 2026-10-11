@@ -1,25 +1,17 @@
 import Vue from 'vue';
-import draggable from 'vuedraggable';
-import BuilderToolbar from './components/Builder/Toolbar.vue';
-import BuilderCanvas from './components/Builder/Canvas.vue';
-import PropertiesPanel from './components/Builder/PropertiesPanel.vue';
-import BuilderElement from './components/Builder/Element.vue';
-import MailBuilder from './components/MailBuilder.vue';
 import MailCustomizerVue from './components/MailCustomizer.vue';
 import MailCustomizerReact from './components/MailCustomizerReact.jsx';
+import { initBuilder } from './builder';
 
-// Vue and axios (and React/ReactDOM, if used) are expected to be loaded by the host page.
-// The webpack config marks them as externals so the bundle stays small and shares the host's copies.
+// The visual builder is plain JavaScript and needs nothing from the host page.
+// Vue 2 / React / axios are only used by the older form-style editors below
+// (data-mail-customizer-vue / -react); they are optional.
 
 const DEFAULT_VARIABLES = { name: 'Guest User', email: 'user@example.com' };
 
-Vue.component('builder-toolbar', BuilderToolbar);
-Vue.component('builder-canvas', BuilderCanvas);
-Vue.component('properties-panel', PropertiesPanel);
-Vue.component('builder-element', BuilderElement);
-Vue.component('mail-builder', MailBuilder);
-Vue.component('mail-customizer', MailCustomizerVue);
-Vue.component('draggable', draggable);
+if (Vue && Vue.component) {
+    Vue.component('mail-customizer', MailCustomizerVue);
+}
 
 function readOptions(element) {
     const templateId = element.getAttribute('data-template-id');
@@ -32,11 +24,19 @@ function readOptions(element) {
         console.error('Failed to parse data-variables JSON:', e);
     }
 
-    return { templateId: templateId ? parseInt(templateId, 10) : null, variables };
+    return {
+        templateId: templateId ? parseInt(templateId, 10) : null,
+        variables,
+        apiBase: element.getAttribute('data-api-base') || undefined,
+        height: element.getAttribute('data-height') || undefined
+    };
 }
 
-function mountVue(element, component, options = {}) {
-    const tag = component === 'builder' ? 'mail-builder' : 'mail-customizer';
+function mountVue(element, options = {}) {
+    if (!Vue || !Vue.component) {
+        console.error('[mail-customizer] Vue 2 must be loaded to use the form-style editor.');
+        return null;
+    }
 
     return new Vue({
         el: element,
@@ -44,18 +44,25 @@ function mountVue(element, component, options = {}) {
             templateId: options.templateId || null,
             defaultVariables: options.variables || DEFAULT_VARIABLES
         },
-        template: `<${tag} :template-id="templateId" :default-variables="defaultVariables"></${tag}>`
+        template: '<mail-customizer :template-id="templateId" :default-variables="defaultVariables"></mail-customizer>'
     });
 }
 
+/**
+ * Mount the visual builder (default) or, with { component: 'customizer' },
+ * the older form-style editor.
+ */
 export function initVue(elementId, options = {}) {
     const element = document.getElementById(elementId);
     if (!element) {
         console.error('Element not found:', elementId);
         return null;
     }
-    return mountVue(element, options.component || 'builder', options);
+
+    return options.component === 'customizer' ? mountVue(element, options) : initBuilder(element, options);
 }
+
+export { initBuilder };
 
 export function initReact(elementId, options = {}) {
     if (typeof window.React === 'undefined' || typeof window.ReactDOM === 'undefined') {
@@ -81,11 +88,11 @@ export function initReact(elementId, options = {}) {
 // Auto-mount on any element carrying the data attributes.
 function autoMount() {
     document.querySelectorAll('[data-mail-builder]').forEach(el => {
-        mountVue(el, 'builder', readOptions(el));
+        initBuilder(el, readOptions(el));
     });
 
     document.querySelectorAll('[data-mail-customizer-vue]').forEach(el => {
-        mountVue(el, 'customizer', readOptions(el));
+        mountVue(el, readOptions(el));
     });
 
     if (typeof window.React !== 'undefined' && typeof window.ReactDOM !== 'undefined') {
@@ -143,20 +150,10 @@ export const events = {
     }
 };
 
-// Handy globals for plain <script> usage (see the bundled Blade views).
+// Handy globals for plain <script> usage.
 if (typeof window !== 'undefined') {
-    window.MailBuilderVue = MailBuilder;
     window.MailCustomizerVue = MailCustomizerVue;
     window.MailCustomizerReact = MailCustomizerReact;
 }
 
-export {
-    BuilderToolbar,
-    BuilderCanvas,
-    PropertiesPanel,
-    BuilderElement,
-    MailBuilder,
-    MailCustomizerVue,
-    MailCustomizerReact,
-    draggable
-};
+export { MailCustomizerVue, MailCustomizerReact };

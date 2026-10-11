@@ -1,33 +1,26 @@
-{{-- src/Resources/views/builder.blade.php --}}
+{{-- src/Resources/views/builder.blade.php : full-page host for the visual builder --}}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Email Template Builder</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/axios@1.7.9/dist/axios.min.js"></script>
     <style>
-        .builder-container {
-            margin: 20px;
-        }
+        html, body { margin: 0; height: 100%; background: #f1f5f9; }
+        .mc-page { height: 100%; padding: 12px; box-sizing: border-box; }
     </style>
 </head>
 <body>
-    <div class="builder-container">
-        {{-- The builder has its own Save / Preview / Send Test buttons. --}}
+    <div class="mc-page">
         <div id="mail-builder-app"
              data-mail-builder
              data-template-id="{{ $templateId ?? '' }}"
+             data-api-base="{{ trim(config('mail-customizer.route_prefix', 'api/mail-customizer'), '/') }}"
+             data-height="calc(100vh - 24px)"
              data-variables='@json($variables ?? new stdClass)'></div>
     </div>
 
     <script src="{{ asset('vendor/mail-customizer/js/mail-customizer.js') }}"></script>
-    <script>
-        axios.defaults.headers.common['X-CSRF-TOKEN'] =
-            document.querySelector('meta[name="csrf-token"]').content;
-    </script>
 </body>
 </html>

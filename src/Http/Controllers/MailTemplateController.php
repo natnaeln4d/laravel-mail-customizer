@@ -7,6 +7,7 @@ use Illuminate\Routing\Controller;
 use Natnaeln4d\MailCustomizer\Models\MailTemplate;
 use Natnaeln4d\MailCustomizer\Services\TemplateCompiler;
 use Natnaeln4d\MailCustomizer\Services\DragDropBuilder;
+use Natnaeln4d\MailCustomizer\Rendering\EmailRenderer;
 use Natnaeln4d\MailCustomizer\Mail\CustomMailable;
 use Natnaeln4d\MailCustomizer\Http\Resources\MailTemplateResource;
 use Illuminate\Support\Facades\Mail;
@@ -16,11 +17,53 @@ class MailTemplateController extends Controller
 {
     protected $compiler;
     protected $builder;
+    protected $renderer;
     
-    public function __construct(TemplateCompiler $compiler, DragDropBuilder $builder)
+    public function __construct(TemplateCompiler $compiler, DragDropBuilder $builder, EmailRenderer $renderer)
     {
         $this->compiler = $compiler;
         $this->builder = $builder;
+        $this->renderer = $renderer;
+    }
+
+    protected function rules(): array
+    {
+        return [
+            'name' => 'required|string|max:255',
+            'subject' => 'required|string|max:255',
+            // Visual editor output (preferred) ...
+            'html' => 'nullable|string',
+            'css' => 'nullable|string',
+            'fonts' => 'nullable|array',
+            'fonts.*' => 'string|max:60',
+            // ... or a raw/legacy block tree.
+            'content' => 'required_without_all:html,structure|nullable|string',
+            'structure' => 'nullable|array',
+            'styles' => 'nullable|array',
+            'images' => 'nullable|array',
+        ];
+    }
+
+    /**
+     * Final email HTML for a request: the visual editor's html+css, a legacy
+     * block-tree `structure`, or raw `content`.
+     */
+    protected function renderContent(Request $request): string
+    {
+        if ($request->filled('html')) {
+            return $this->renderer->renderHtml(
+                (string) $request->input('html'),
+                (string) $request->input('css', ''),
+                ['fonts' => (array) $request->input('fonts', []), 'title' => (string) $request->input('subject', '')]
+            );
+        }
+
+        $structure = $request->input('structure');
+        if (is_array($structure) && $structure && array_keys($structure) === range(0, count($structure) - 1)) {
+            return $this->builder->generateHtmlFromStructure($structure, []);
+        }
+
+        return (string) $request->input('content', '');
     }
     
     public function index()
@@ -31,19 +74,9 @@ class MailTemplateController extends Controller
     
     public function store(Request $request)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'subject' => 'required|string|max:255',
-            'content' => 'required|string',
-            'structure' => 'nullable|array', 
-            'styles' => 'nullable|array',
-            'images' => 'nullable|array', 
-        ]);
+        $request->validate($this->rules());
         
-        $content = $request->content;
-        if (!empty($request->structure)) {
-            $content = $this->builder->generateHtmlFromStructure($request->structure, []);
-        }
+        $content = $this->renderContent($request);
         
         $template = MailTemplate::create([
             'name' => $request->name,
@@ -66,19 +99,9 @@ class MailTemplateController extends Controller
     
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'subject' => 'required|string|max:255',
-            'content' => 'required|string',
-            'structure' => 'nullable|array',
-            'styles' => 'nullable|array',
-            'images' => 'nullable|array', 
-        ]);
+        $request->validate($this->rules());
         
-        $content = $request->content;
-        if (!empty($request->structure)) {
-            $content = $this->builder->generateHtmlFromStructure($request->structure, []);
-        }
+        $content = $this->renderContent($request);
         
         $template = MailTemplate::findOrFail($id);
         $template->update([
@@ -122,6 +145,9 @@ class MailTemplateController extends Controller
     {
         $request->validate([
             'content' => 'nullable|string',
+            'html' => 'nullable|string',
+            'css' => 'nullable|string',
+            'fonts' => 'nullable|array',
             'structure' => 'nullable|array',
             'styles' => 'nullable|array',
             'images' => 'nullable|array',
@@ -148,6 +174,9 @@ class MailTemplateController extends Controller
         $request->validate([
             'subject' => 'nullable|string|max:255',
             'content' => 'nullable|string',
+            'html' => 'nullable|string',
+            'css' => 'nullable|string',
+            'fonts' => 'nullable|array',
             'structure' => 'nullable|array',
             'styles' => 'nullable|array',
             'images' => 'nullable|array',
@@ -178,10 +207,7 @@ class MailTemplateController extends Controller
      */
     protected function draftFromRequest(Request $request): MailTemplate
     {
-        $content = $request->input('content', '');
-        if (! empty($request->structure)) {
-            $content = $this->builder->generateHtmlFromStructure($request->structure, []);
-        }
+        $content = $this->renderContent($request);
 
         return new MailTemplate([
             'name' => 'Draft',
@@ -199,7 +225,7 @@ class MailTemplateController extends Controller
         // Clients send either {variables: {...}} or the variables as flat fields.
         $variables = $request->has('variables')
             ? (array) $request->input('variables')
-            : $request->except(['email', 'emails', 'subject', 'content', 'structure', 'styles', 'images', 'layout']);
+            : $request->except(['email', 'emails', 'subject', 'content', 'html', 'css', 'fonts', 'structure', 'styles', 'images', 'layout']);
 
         return array_merge(config('mail-customizer.default_variables', []), $variables);
     }
