@@ -1,5 +1,6 @@
 import { INERT } from './components';
 import { DEFAULT_FONT } from './fonts';
+import { icon } from './icons';
 
 const FONT = DEFAULT_FONT;
 
@@ -180,29 +181,41 @@ export const starterContent = () => [
 
 // ---- palette ---------------------------------------------------------------
 
-const label = (icon, name) =>
-    `<div class="mc-blk"><div class="mc-blk-ico">${icon}</div><div class="mc-blk-lbl">${name}</div></div>`;
+const label = (iconName, name) =>
+    `<div class="mc-blk"><div class="mc-blk-ico">${icon(iconName, 20)}</div><div class="mc-blk-lbl">${name}</div></div>`;
+
+/** Blocks the quick-add toolbox exposes (id -> icon, label). */
+export const TOOLBOX = [
+    ['section', 'section', 'Section'],
+    ['columns-2', 'columns2', '2 columns'],
+    ['heading', 'heading', 'Heading'],
+    ['text', 'text', 'Text'],
+    ['image', 'image', 'Image'],
+    ['button', 'button', 'Button'],
+    ['divider', 'divider', 'Divider'],
+    ['spacer', 'spacer', 'Spacer']
+];
 
 export function registerBlocks(editor, variables = {}) {
-    const add = (id, name, icon, category, content) =>
-        editor.Blocks.add(id, { label: label(icon, name), category, content, attributes: { class: 'mc-block' } });
+    const add = (id, name, iconName, category, content) =>
+        editor.Blocks.add(id, { label: label(iconName, name), category, content, attributes: { class: 'mc-block', title: name } });
 
-    add('section', 'Section', '▭', 'Layout', section());
-    add('columns-2', '2 columns', '◫', 'Layout', columns(2));
-    add('columns-3', '3 columns', '▥', 'Layout', columns(3));
+    add('section', 'Section', 'section', 'Layout', section());
+    add('columns-2', '2 columns', 'columns2', 'Layout', columns(2));
+    add('columns-3', '3 columns', 'columns3', 'Layout', columns(3));
 
-    add('heading', 'Heading', 'H', 'Content', heading());
-    add('text', 'Text', 'T', 'Content', text());
-    add('image', 'Image', '▣', 'Content', image());
-    add('button', 'Button', '⬭', 'Content', button());
-    add('divider', 'Divider', '―', 'Content', divider());
-    add('spacer', 'Spacer', '↕', 'Content', spacer());
+    add('heading', 'Heading', 'heading', 'Content', heading());
+    add('text', 'Text', 'text', 'Content', text());
+    add('image', 'Image', 'image', 'Content', image());
+    add('button', 'Button', 'button', 'Content', button());
+    add('divider', 'Divider', 'divider', 'Content', divider());
+    add('spacer', 'Spacer', 'spacer', 'Content', spacer());
 
-    add('header', 'Header', '⬒', 'Ready-made', headerSection());
-    add('hero', 'Hero', '◩', 'Ready-made', heroSection());
-    add('footer', 'Footer', '⬓', 'Ready-made', footerSection());
+    add('header', 'Header', 'header', 'Ready-made', headerSection());
+    add('hero', 'Hero', 'hero', 'Ready-made', heroSection());
+    add('footer', 'Footer', 'footer', 'Ready-made', footerSection());
 
     Object.keys(variables || {}).forEach(key => {
-        add(`var-${key}`, `{{${key}}}`, '{ }', 'Variables', text(`{{${key}}}`));
+        add(`var-${key}`, `{{${key}}}`, 'variable', 'Variables', text(`{{${key}}}`));
     });
 }

@@ -42,6 +42,38 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Builder Theme
+    |--------------------------------------------------------------------------
+    |
+    | How the builder looks. By default it ships a studio-style interface in
+    | the "luffy" colour theme (vest red, straw-hat gold, deep-sea navy) and
+    | follows the visitor's light/dark preference.
+    |
+    |  mode      light | dark | auto (follow the OS) | inherit (match the page
+    |            the builder is embedded in: its background, text and accent)
+    |  preset    luffy | goku | adobe (neutral greys + classic blue)
+    |  accent    hex colour for primary actions, e.g. '#7c3aed'
+    |  secondary hex colour for highlights/selection (used in dark mode)
+    |  tokens    raw CSS variable overrides, e.g. ['--mc-bg-1' => '#ffffff']
+    |  font      null, 'inherit' (use your site's font) or any CSS font stack
+    |  brand     name shown top-left
+    |  picker    let each user change the theme from inside the builder
+    |            (their choice is remembered in their browser)
+    |
+    */
+    'theme' => [
+        'mode' => 'auto',
+        'preset' => 'luffy',
+        'accent' => null,
+        'secondary' => null,
+        'tokens' => [],
+        'font' => null,
+        'brand' => 'Mail Studio',
+        'picker' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Email Renderer
     |--------------------------------------------------------------------------
     |

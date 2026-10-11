@@ -2,9 +2,11 @@
 
 A **visual, drag-and-drop email builder** you can drop into any Laravel dashboard. Your users build an email the way they would in Webflow or Elementor — drag blocks onto a live canvas, click anything to restyle it, no code — save it as a template, and your app sends it with their own variables.
 
+- A **studio-style interface** in the spirit of Photoshop / Illustrator: menu bar, a contextual options bar, a toolbox, a panel dock (Properties · Appearance · Layers), zoom and a status bar. **Light and dark themes**, a Luffy-inspired colour theme by default (vest red, straw-hat gold, deep-sea navy), and presets, custom colours or "match my site" for your own dashboard. See [Theming](#theming).
 - Drag **sections, columns, headings, text, images, buttons, dividers and spacers** onto the canvas. Start from ready-made **Header / Hero / Footer** sections.
 - Style anything: **fonts, sizes, colours, spacing, borders, rounded corners, shadows**, and per-element **background colour, background image, image overlay, two-colour gradient**.
-- Desktop and **mobile** preview, undo/redo, layer tree, image upload, `{{variables}}`, live **email preview** and **send test**.
+- **One design, responsive by itself.** Desktop / Tablet / Mobile are *previews* of the same design: columns stack and images scale on phones. Nothing to maintain twice.
+- Undo/redo, zoom, layer tree, image upload, `{{variables}}`, live **email preview**, **send test**, HTML export.
 - The output is **email-safe HTML**: a server-side step converts whatever the user built into table layout with inline styles, so it holds up in Gmail, Outlook and Apple Mail.
 
 ```
@@ -20,7 +22,7 @@ A **visual, drag-and-drop email builder** you can drop into any Laravel dashboar
 ## Contents
 
 - [Requirements](#requirements) · [Installation](#installation) · [Quick start](#quick-start)
-- [Using the builder](#using-the-builder)
+- [Using the builder](#using-the-builder) · [Theming](#theming)
 - [Sending emails](#sending-emails) · [Variables](#variables)
 - [Configuration](#configuration) · [Authentication & authorization](#authentication--authorization)
 - [How the email output is made](#how-the-email-output-is-made) · [Email client compatibility](#email-client-compatibility)
@@ -91,6 +93,8 @@ The page is protected by the same middleware as the API (`web` + `auth` by defau
 | `template-id` | `null` | Template to load. Omit for a new one. |
 | `variables` | `config('mail-customizer.default_variables')` | Sample values for **Preview** and **Send test**. Each key also appears as a draggable `{{key}}` block. |
 | `height` | `88vh` | Any CSS height. |
+| `theme` | `[]` | Theme overrides merged over `config('mail-customizer.theme')`. See [Theming](#theming). |
+| `ui-fonts` | `true` | Load the interface font (Inter) from Google Fonts. |
 | `script` | published asset | Override the bundle URL. |
 
 The component loads the bundle once per page and reads your route prefix from the config. It needs nothing else.
@@ -107,6 +111,8 @@ Include the bundle and add a div with data attributes; it mounts automatically:
      data-template-id="12"
      data-api-base="api/mail-customizer"
      data-height="85vh"
+     data-theme='{"mode":"inherit","font":"inherit"}'
+     data-ui-fonts="true"
      data-variables='{"name":"Ann"}'></div>
 ```
 
@@ -114,24 +120,37 @@ Because the builder is plain JavaScript, the same div works inside a Vue, React,
 
 ## Using the builder
 
-**Layout.** Blocks on the left, the email canvas in the middle (a 600 px email on a grey page), and **Style / Settings / Layers** on the right.
+```
+┌ File  Edit  View  Help          ● Template name                 ☀ 🎨   Preview  Send test  [Save] ┐ menu bar
+├ Name [        ] Subject [        ] │ ▢ Heading  Font [Arial▾] Size [24] Color ■  B ≡ ≡ ≡  Fill ■   ┤ options bar
+├──┬──────────────┬────────────────────────────────────────────┬──────────────────┤
+│▢ │ BLOCKS       │                                            │ ▾ PROPERTIES     │
+│▭ │ search…      │            the email (600 px)              │ ▾ APPEARANCE     │
+│H │ Layout       │            on a pasteboard                 │ ▾ LAYERS         │
+│T │ Content      │                                            │                  │
+│▣ │ Ready-made   │                                            │                  │
+├──┴──────────────┴────────────────────────────────────────────┴──────────────────┤
+└ 100% − + ⤢   Email › Section › Heading                       🖥 ▯ 📱   ● All changes saved ┘ status bar
+```
 
-**Adding things.** Drag a block onto the canvas — onto the page, or *into* a section or a column — or just **click a block** to append it. Drag the ✥ handle on a selected element to move it; ↰ selects the parent; ⧉ duplicates; ✕ deletes. Double-click text to edit it, and double-click an image to choose or upload one.
+**Adding things.** Drag a block onto the canvas — onto the page, or *into* a section or a column — or just **click a block** (or its icon in the toolbox on the far left) to append it. Select an element, then use its floating toolbar: ↰ select parent, ✥ drag to move, ⧉ duplicate, 🗑 delete. Double-click text to edit it; an Image block opens the picker straight away (upload a file, then click it).
 
 | Block | Notes |
 |---|---|
 | **Section** | A full-width band. Give it a background, padding, borders; drop anything inside. |
 | **2 / 3 columns** | Sit side by side, and stack on phones. Click a column to style it. |
-| **Heading · Text** | Rich text. Use the Style tab for font, size, weight, colour, spacing, alignment. |
-| **Image** | The picker opens as soon as you add it: upload a file, then click it. Double-click the image later to change it. Blocks left without a picture are omitted from the email. |
-| **Button** | Label and link in *Settings*; colours, padding, radius in *Style*. |
+| **Heading · Text** | Rich text. |
+| **Image** | Upload from your computer or paste a URL. Blocks left without a picture are omitted from the email. |
+| **Button** | Label and link in *Appearance*; colours, padding, radius in the options bar or *Properties*. |
 | **Divider · Spacer** | A line (style it like any element) and empty vertical space (change its height). |
 | **Header · Hero · Footer** | Ready-made sections to start from. |
 | **Variables** | `{{name}}`, `{{company}}`, … from the `variables` you pass in. |
 
-**Style tab** (any selected element): font (web-safe stacks plus Roboto, Open Sans, Lato, Montserrat, Poppins, Inter, Playfair Display, Merriweather), size, weight, colour, line height, letter spacing, alignment, width / max width / height, padding, margin, border, border radius, box shadow.
+**Options bar (top, contextual).** Template name and subject live on the left. On the right, the controls for whatever is selected: text gets font, size, colour, bold and alignment; sections, columns, text and buttons get **Fill** (background colour); buttons and sections get **Radius**; spacers get **Height**.
 
-**Settings tab** — *Background*, for sections, columns, headings, text and buttons:
+**Properties panel.** Font (web-safe stacks plus Roboto, Open Sans, Lato, Montserrat, Poppins, Inter, Playfair Display, Merriweather), size, weight, colour, line height, letter spacing, alignment, width / max width / height, padding, margin, border, border radius, box shadow.
+
+**Appearance panel** — *background*, for sections, columns, headings, text and buttons:
 
 | Control | What it does |
 |---|---|
@@ -141,9 +160,22 @@ Because the builder is plain JavaScript, the same div works inside a Vue, React,
 | Gradient background, from, to, direction | A two-colour linear gradient. |
 | Image size / position / repeat | Cover, contain, positioning, repeat. |
 
-Layers combine: an overlay sits on top of a gradient, which sits on top of the image. *Note: a fully opaque gradient hides an image beneath it — use the overlay for tinting, or the gradient on its own.*
+Layers combine: an overlay sits on top of a gradient, which sits on top of the image. *A fully opaque gradient hides an image beneath it — use the overlay for tinting, or the gradient on its own.* Links (for buttons) also live in this panel.
 
-**Top bar.** Template name and subject, Desktop / Mobile (edits made in Mobile apply only to phones), Undo / Redo, Outlines, **Preview email** (the server-rendered result, with desktop / mobile / HTML views), **Send test**, **Save**.
+**Menus & shortcuts.**
+
+| Menu | Items |
+|---|---|
+| **File** | Save (`Ctrl/⌘ S`) · Preview email · Send test email · Export HTML |
+| **Edit** | Undo · Redo · Select parent · Duplicate (`Ctrl/⌘ D`) · Delete |
+| **View** | Zoom in/out (`Ctrl/⌘ +` / `−`) · Fit to screen · Actual size (`Ctrl/⌘ 0`) · Outlines · Blocks panel · Preview as desktop / tablet / mobile · Theme & colors |
+| **Help** | Keyboard shortcuts |
+
+**Status bar.** Zoom controls, a clickable breadcrumb of the selection (`Email › Section › Heading`), the **preview width** switch (desktop / tablet / mobile) and a live save state (*All changes saved* / *Unsaved changes*). The browser also warns before you leave with unsaved changes (`warnOnLeave`).
+
+### One design, many screens
+
+Desktop, Tablet and Mobile in the status bar only change the **width of the preview** (the mobile one is drawn in a phone frame). Nothing you do in Mobile is stored separately: there are no mobile-only overrides to keep in sync. The email adapts by itself — the container becomes fluid, images scale down, and columns stack — exactly like the real email does in a phone's inbox. To see it exactly as recipients do, use **Preview email**.
 
 ## Sending emails
 
@@ -190,6 +222,7 @@ Type `{{name}}` (or `{{ name }}`) anywhere — text, button label, link, image U
 | `middleware` | `['web', 'auth']` | Middleware for the REST API. |
 | `route_prefix` | `api/mail-customizer` | URL prefix of the REST API. The Blade component and built-in page pass it to the builder automatically. |
 | `ui.enabled` / `ui.path` / `ui.middleware` | `true` / `mail-customizer` / `['web','auth']` | The built-in builder page. |
+| `theme` | see [Theming](#theming) | Look and feel of the builder: mode, preset, colours, font, brand. |
 | `renderer.width` | `600` | Email container width in px (min 320). |
 | `renderer.background` | `#f4f4f4` | Outer page colour. |
 | `renderer.content_background` | `#ffffff` | Email body colour. |
@@ -199,6 +232,45 @@ Type `{{name}}` (or `{{ name }}`) anywhere — text, button label, link, image U
 | `images.max_upload_size` | `2048` (KB) | Upload limit. |
 | `images.default_storage` | `public` | Filesystem disk for uploads. |
 | `images.storage_path` | `mail-templates/images` | Upload folder. Deleting is only allowed inside it. |
+
+## Theming
+
+The interface is built from a handful of colour variables (`--mc-*`), so it can follow your product's look instead of fighting it. There are four layers, from broad to specific:
+
+**1. Defaults.** Out of the box: the **Luffy** theme — vest red for actions, straw-hat gold for highlights and selection, deep-sea navy surfaces in dark mode, warm sand in light mode — following the visitor's light/dark preference. (The colour mood is borrowed; the interface itself is original.)
+
+**2. Presets.** `luffy`, `goku` (gi orange + sky blue) and `adobe` (neutral greys + a classic blue — the closest to a desktop creative suite).
+
+**3. Your branding**, in `config/mail-customizer.php` or per placement:
+
+```php
+// config/mail-customizer.php
+'theme' => [
+    'mode'      => 'auto',        // light | dark | auto | inherit
+    'preset'    => 'luffy',       // luffy | goku | adobe
+    'accent'    => '#7c3aed',     // primary actions (buttons, links)
+    'secondary' => null,          // highlights/selection (gold in Luffy)
+    'tokens'    => [],            // raw overrides, e.g. ['--mc-bg-1' => '#ffffff']
+    'font'      => 'inherit',     // use your site's font (or any font stack)
+    'brand'     => 'Acme Mail',   // name shown top-left
+    'picker'    => true,          // let users change the theme themselves
+],
+```
+
+```blade
+{{-- override per placement; merged over the config --}}
+<x-mail-customizer::builder :theme="['mode' => 'dark', 'accent' => '#0ea5e9']" :ui-fonts="false" />
+```
+
+Text drawn on top of your accent/secondary colours automatically switches between white and near-black for readable contrast, so any brand colour you pick stays legible.
+
+**4. Match my site (`mode: 'inherit'`).** The builder reads the page it is embedded in — the background and text colour of its container, the site font (with `font: 'inherit'`) and the first of `--primary`, `--accent`, `--bs-primary`, `--color-primary`, `--brand` it finds — and derives its whole palette from them. Dropped into a dashboard with a sidebar, it simply looks like part of it. Add `data-theme='{"mode":"inherit","font":"inherit"}'` on a plain `<div data-mail-builder>`, or pass `theme` to `initBuilder`.
+
+**Users can change it, too.** With `picker` on, the sun/moon button switches light/dark and the palette button opens *Appearance* (mode, the three presets, custom accent and highlight colours, *Match site*, reset). The choice is remembered in that browser and wins over your defaults until they press *Reset to default*. Set `'picker' => false` to lock the look to your branding.
+
+Change it from code at any time (e.g. when your app's own theme switches): `builder.setTheme({ mode: 'dark' })`.
+
+Interface font: **Inter** is loaded from Google Fonts for a crisp interface. Pass `:ui-fonts="false"` (or `uiFonts: false`) to use the system font stack — handy for a strict CSP or offline use. All animation (springy panel transitions, menus, drop-in pops, the stretchy "busy" bar) is switched off automatically for users who prefer reduced motion.
 
 ## Authentication & authorization
 
@@ -275,10 +347,14 @@ const builder = MailCustomizer.initBuilder(document.getElementById('app'), {
   variables: { name: 'Ann' },           // sample values
   apiBase: 'api/mail-customizer',       // default
   height: '85vh',
+  theme: { mode: 'inherit', font: 'inherit' },   // see Theming
+  uiFonts: true,                        // load Inter from Google Fonts
+  warnOnLeave: true,                    // warn before leaving with unsaved changes
 });
 
 builder.editor;   // the underlying GrapesJS editor (full API: https://grapesjs.com/docs/api/editor.html)
 builder.save();   // programmatic save
+builder.setTheme({ mode: 'dark', accent: '#7c3aed' });   // restyle at runtime
 document.addEventListener('mail-customizer:saved', e => console.log(e.detail));   // template JSON after each save
 ```
 
@@ -352,6 +428,8 @@ Views: `builder` (full page), `components/builder` (the Blade component), plus t
 | Dropping a block does nothing | Sections can only be dropped on the page itself; content can go on the page or inside a section/column. Click a block to append it instead. |
 | Uploaded images don't show in emails | Run `php artisan storage:link` and set `APP_URL` correctly — email clients need absolute URLs. |
 | Emails show `{{name}}` literally | You didn't pass `name` to `->mailable([...])`. |
+| The builder doesn't match my site's colours | Use `mode: 'inherit'`, or set `accent` / `tokens`. A saved user choice (per browser) overrides defaults: press *Reset to default* in the Appearance popover. |
+| The interface font looks generic / my CSP blocks Google Fonts | Set `:ui-fonts="false"`; the system font stack is used. |
 | Looks different in Outlook | See [compatibility](#email-client-compatibility): gradients, overlays, shadows and rounded corners degrade. |
 | "made with the old builder" toast | Templates saved with the previous block-list builder can't be opened in the visual builder. Saving replaces them. |
 
@@ -359,6 +437,7 @@ Views: `builder` (full page), `components/builder` (the Blade component), plus t
 
 - **Outlook desktop** does not render gradients, overlays or rounded corners, and may not show background images (VML background support is planned).
 - **No custom block API for the visual builder yet.** The block-tree renderer is extensible; the builder's palette is not.
+- **The interface is a modern-browser app**: it relies on CSS `color-mix()` (supported in evergreen browsers since 2023).
 - **Web fonts** only load where the client supports them; the list is fixed (web-safe + 8 Google fonts).
 - **Image library**: the picker shows images uploaded in the current session plus those already used in the template. A server-side library of everything uploaded earlier is planned.
 - **Old block-list templates** can't be reopened in the new builder.
@@ -388,7 +467,8 @@ src/
   Rendering/EmailRenderer.php (+ Blocks/*, Css)  html/css -> email HTML · block tree -> email HTML
   Services/                                      TemplateCompiler (variables), DragDropBuilder (legacy palette)
   Mail/CustomMailable.php
-  Resources/assets/js/builder/                   the visual builder (GrapesJS): blocks, components, background controls, UI
+  Resources/assets/js/builder/                   the visual builder (GrapesJS): index (wiring), shell (layout), theme, menus,
+                                                 optionsbar, blocks, components, background controls, icons, builder.css
   Resources/assets/js/mail-customizer.js         bundle entry (auto-mount, window.MailCustomizer)
   Resources/views/                               builder page + <x-mail-customizer::builder>
   routes/api.php · routes/web.php

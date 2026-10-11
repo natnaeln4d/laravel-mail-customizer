@@ -24,9 +24,21 @@ function readOptions(element) {
         console.error('Failed to parse data-variables JSON:', e);
     }
 
+    let theme;
+    try {
+        const json = element.getAttribute('data-theme');
+        if (json) theme = JSON.parse(json);
+    } catch (e) {
+        console.error('Failed to parse data-theme JSON:', e);
+    }
+
+    const uiFonts = element.getAttribute('data-ui-fonts');
+
     return {
         templateId: templateId ? parseInt(templateId, 10) : null,
         variables,
+        theme,
+        uiFonts: uiFonts === null ? undefined : uiFonts !== 'false',
         apiBase: element.getAttribute('data-api-base') || undefined,
         height: element.getAttribute('data-height') || undefined
     };

@@ -7,8 +7,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Email Template Builder</title>
     <style>
-        html, body { margin: 0; height: 100%; background: #f1f5f9; }
-        .mc-page { height: 100%; padding: 12px; box-sizing: border-box; }
+        html, body { margin: 0; height: 100%; background: #080f1d; }
+        .mc-page { height: 100%; padding: 10px; box-sizing: border-box; }
     </style>
 </head>
 <body>
@@ -17,7 +17,8 @@
              data-mail-builder
              data-template-id="{{ $templateId ?? '' }}"
              data-api-base="{{ trim(config('mail-customizer.route_prefix', 'api/mail-customizer'), '/') }}"
-             data-height="calc(100vh - 24px)"
+             data-height="calc(100vh - 20px)"
+             data-theme='@json((array) config('mail-customizer.theme', []))'
              data-variables='@json($variables ?? new stdClass)'></div>
     </div>
 

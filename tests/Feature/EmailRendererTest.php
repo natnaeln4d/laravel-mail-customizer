@@ -160,6 +160,38 @@ class EmailRendererTest extends TestCase
         $this->assertStringContainsString('mail-customizer.js', $html);
     }
 
+    public function test_theme_comes_from_config_and_can_be_overridden_per_component()
+    {
+        config()->set('mail-customizer.theme.preset', 'goku');
+        config()->set('mail-customizer.theme.brand', 'Acme Mail');
+
+        $default = Blade::render('<x-mail-customizer::builder />');
+        $theme = $this->themeFrom($default);
+        $this->assertSame('goku', $theme['preset']);
+        $this->assertSame('Acme Mail', $theme['brand']);
+        $this->assertSame('auto', $theme['mode']);          // package default survives
+
+        $custom = Blade::render('<x-mail-customizer::builder :theme="$t" :ui-fonts="false" />', [
+            't' => ['mode' => 'inherit', 'accent' => '#7c3aed', 'font' => 'inherit'],
+        ]);
+        $theme = $this->themeFrom($custom);
+        $this->assertSame('inherit', $theme['mode']);
+        $this->assertSame('#7c3aed', $theme['accent']);
+        $this->assertSame('goku', $theme['preset']);        // merged over config, not replaced
+        $this->assertStringContainsString('data-ui-fonts="false"', $custom);
+
+        // The built-in page gets the same config.
+        $page = $this->get('/mail-customizer')->assertOk()->getContent();
+        $this->assertSame('Acme Mail', $this->themeFrom($page)['brand']);
+    }
+
+    protected function themeFrom(string $html): array
+    {
+        $this->assertSame(1, preg_match("/data-theme='([^']*)'/", $html, $m), 'data-theme attribute missing');
+
+        return json_decode(html_entity_decode($m[1]), true);
+    }
+
     public function test_model_helpers()
     {
         MailTemplate::create(['name' => 'Welcome', 'subject' => 'Hi', 'content' => '<p>x</p>']);

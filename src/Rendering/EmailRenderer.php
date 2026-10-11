@@ -459,7 +459,7 @@ class EmailRenderer
             . $this->fontLinks((array) ($options['fonts'] ?? []))
             . '<!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->'
             // Progressive enhancement only: the email must look right with this block stripped.
-            . '<style>body{margin:0;padding:0;}img{-ms-interpolation-mode:bicubic;}table{border-collapse:collapse;}'
+            . '<style>body{margin:0;padding:0;}img{-ms-interpolation-mode:bicubic;max-width:100%;height:auto;}table{border-collapse:collapse;}'
             . '@media only screen and (max-width:' . $width . 'px){.mc-container{width:100%!important;}.mc-stack{display:block!important;width:100%!important;}}'
             . ($options['extra_css'] ?? '')
             . '</style>'
